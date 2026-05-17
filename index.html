@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A beautiful minimal calendar displaying current and next month">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calendar">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23121212' width='192' height='192'/><rect fill='%23ffffff' x='40' y='40' width='112' height='112' rx='20'/></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23121212' width='192' height='192'/><rect fill='%23ffffff' x='40' y='40' width='112' height='112' rx='20'/></svg>">
+    <title>Calendar</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'SF Mono', 'Fira Code', 'Inconsolata', 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100dvh;
+            overflow: hidden;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .calendar-container {
+            width: min(380px, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .month-section {
+            padding: 0;
+        }
+
+        .month-section:first-child {
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .month-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #ffffff;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .year-text {
+            color: #ffffff;
+            font-size: 1.42rem;
+            font-weight: bold;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            row-gap: 2px;
+            text-align: center;
+            align-items: center;
+        }
+
+        .day-header {
+            color: #ffffff;
+            font-size: 0.98rem;
+            font-weight: bold;
+            padding-bottom: 4px;
+        }
+
+        .day-number {
+            font-size: 1rem;
+            font-weight: bold;
+            height: 34px;
+            line-height: 34px;
+            width: 34px;
+            margin: 0 auto;
+            color: #ffffff;
+            border-radius: 50%;
+            cursor: default;
+        }
+
+        .day-number.current {
+            background-color: #ffffff;
+            color: #121212;
+            font-weight: bold;
+        }
+
+        .next-month .month-name {
+            color: #ffffff;
+        }
+
+        .next-month .day-header {
+            color: #ffffff;
+        }
+
+        .next-month .day-number {
+            color: #ffffff;
+        }
+
+        .empty-cell {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (display-mode: standalone) {
+            body {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calendar-container" id="calendar"></div>
+
+    <script>
+        const calendarContainer = document.getElementById('calendar');
+        const dayNames = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+        const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
+        const currentDate = today.getDate();
+
+        calendarContainer.innerHTML = '';
+        renderMonth(currentYear, currentMonth, true);
+        renderMonth(currentYear, currentMonth + 1, false);
+
+        function renderMonth(year, monthIndex, isCurrentMonth) {
+            const dateObj = new Date(year, monthIndex, 1);
+            const targetYear = dateObj.getFullYear();
+            const targetMonth = dateObj.getMonth();
+
+            const monthSection = document.createElement('div');
+            monthSection.className = isCurrentMonth ? 'month-section' : 'month-section next-month';
+
+            const monthNameDiv = document.createElement('div');
+            monthNameDiv.className = 'month-name';
+
+            const monthSpan = document.createElement('span');
+            monthSpan.innerText = monthNames[targetMonth];
+            monthNameDiv.appendChild(monthSpan);
+
+            if (isCurrentMonth) {
+                const yearSpan = document.createElement('span');
+                yearSpan.className = 'year-text';
+                yearSpan.innerText = targetYear;
+                monthNameDiv.appendChild(yearSpan);
+            }
+
+            monthSection.appendChild(monthNameDiv);
+
+            const gridDiv = document.createElement('div');
+            gridDiv.className = 'calendar-grid';
+
+            dayNames.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.innerText = day;
+                gridDiv.appendChild(header);
+            });
+
+            let firstDayIndex = new Date(targetYear, targetMonth, 1).getDay();
+            firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day-number empty-cell';
+                gridDiv.appendChild(emptyDiv);
+            }
+
+            const daysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day-number';
+                dayDiv.innerText = day;
+                if (isCurrentMonth && day === currentDate && targetMonth === currentMonth && targetYear === currentYear) {
+                    dayDiv.classList.add('current');
+                }
+                gridDiv.appendChild(dayDiv);
+            }
+
+            const totalCells = firstDayIndex + daysInMonth;
+            const remainingCells = 42 - totalCells;
+            for (let i = 0; i < remainingCells; i++) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'day-number empty-cell';
+                gridDiv.appendChild(emptyDiv);
+            }
+
+            monthSection.appendChild(gridDiv);
+            calendarContainer.appendChild(monthSection);
+        }
+    </script>
+    <script>
+        // Register Service Worker for offline functionality
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(registration => {
+                console.log('Service Worker registered:', registration);
+            }).catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+
+        // Handle app installation
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+    </script>
+</body>
+</html>
